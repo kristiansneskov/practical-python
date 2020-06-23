@@ -1,3 +1,81 @@
 # report.py
 #
 # Exercise 2.4
+
+
+import csv
+from pprint import pprint
+
+def read_prices(filename):
+    prices = {}
+    try:
+        with open(filename,'r') as f:
+            rows = csv.reader(f)
+            for row in rows:
+                if len(row) == 0:
+                    continue
+                (name, price) = row
+                prices[name] = float(price)
+    except FileNotFoundError:
+        print('File not found', filename)
+    return prices
+
+
+def read_portfolio(filename):
+    portfolio = []
+    try:
+        with open(filename, 'rt') as f:
+            rows = csv.reader(f)
+            header = next(rows)
+            for row in rows:
+                (name,qty,price) = row
+                try:
+                    portfolio.append({'name': name, 'shares': int(qty), 'price': float(price)})
+                except ValueError:
+                    print(f'invalid record encountered on line:{row} - skipping entry')
+        return portfolio
+    except FileNotFoundError:
+        print('File not found')
+        return None
+
+def make_report(portfolio, prices):
+    report=[]
+    for s in portfolio:
+        if s['name'] in prices:
+            diff = round(s['shares'] * (s['price'] - prices[s['name']]),2)
+        else:
+            diff = None
+        report.append((s['name'], s['shares'], s['price'], diff))
+    return report
+
+
+prices = read_prices('Data/prices.csv')
+#pprint(prices)
+
+#portfolio = read_portfolio('Data/missing.csv')
+portfolio = read_portfolio('Data/portfolio.csv')
+#pprint(portfolio)
+
+report = make_report(portfolio, prices)
+for r in report:
+    print(r)
+
+total=0
+total_diff = 0
+for s in portfolio:
+    total += s['shares'] * s['price']
+    if s['name'] in prices:
+        diff = round(s['shares'] * (s['price'] - prices[s['name']]),2)
+        if diff >= 0:
+            text = str.ljust(f"Total gain on {s['name']}" ,20)
+            print(f"{text} = {diff:>10.2f}")
+        else:
+            text = str.ljust(f"Total loss on {s['name']}" ,20)
+            print(f"{text} = {diff:>10.2f}")
+        total_diff += diff
+    else:
+        print(f"No price for share {s['name']}")
+print(total)
+diff_text = 'gain' if total_diff > 0 else 'loss'
+print(f"Total {diff_text} = {round(total_diff,2)}")
+
