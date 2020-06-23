@@ -42,12 +42,24 @@ def make_report(portfolio, prices):
     report=[]
     for s in portfolio:
         if s['name'] in prices:
-            diff = round(s['shares'] * (s['price'] - prices[s['name']]),2)
+            diff = (prices[s['name']] - s['price'])
         else:
             diff = None
-        report.append((s['name'], s['shares'], s['price'], diff))
+        report.append((s['name'], s['shares'], prices[s['name']], diff))
     return report
 
+
+def print_report(report):
+    def header_formatting(name):
+        return f"{name:>10s}"
+
+    headers = ('Name', 'Shares', 'Price', 'Change')
+    print(' '.join(map(header_formatting, headers)))
+    print('---------- ---------- ---------- -----------')
+    for name, shares, price, change in report:
+        price_value = f"${price:.2f}"
+        price_with_currency = f"{price_value:>10s}"
+        print(f'{name:>10s} {shares:>10d} {price_with_currency} {change:>10.2f}')
 
 prices = read_prices('Data/prices.csv')
 #pprint(prices)
@@ -57,25 +69,26 @@ portfolio = read_portfolio('Data/portfolio.csv')
 #pprint(portfolio)
 
 report = make_report(portfolio, prices)
-for r in report:
-    print(r)
 
-total=0
-total_diff = 0
-for s in portfolio:
-    total += s['shares'] * s['price']
-    if s['name'] in prices:
-        diff = round(s['shares'] * (s['price'] - prices[s['name']]),2)
-        if diff >= 0:
-            text = str.ljust(f"Total gain on {s['name']}" ,20)
-            print(f"{text} = {diff:>10.2f}")
-        else:
-            text = str.ljust(f"Total loss on {s['name']}" ,20)
-            print(f"{text} = {diff:>10.2f}")
-        total_diff += diff
-    else:
-        print(f"No price for share {s['name']}")
-print(total)
-diff_text = 'gain' if total_diff > 0 else 'loss'
-print(f"Total {diff_text} = {round(total_diff,2)}")
+print_report(report)
+
+
+#total=0
+#total_diff = 0
+#for s in portfolio:
+#    total += s['shares'] * s['price']
+#    if s['name'] in prices:
+#        diff = round(s['shares'] * (s['price'] - prices[s['name']]),2)
+#        if diff >= 0:
+#            text = str.ljust(f"Total gain on {s['name']}" ,20)
+#            print(f"{text} = {diff:>10.2f}")
+#        else:
+#            text = str.ljust(f"Total loss on {s['name']}" ,20)
+#            print(f"{text} = {diff:>10.2f}")
+#        total_diff += diff
+#    else:
+#        print(f"No price for share {s['name']}")
+#print(total)
+#diff_text = 'gain' if total_diff > 0 else 'loss'
+#print(f"Total {diff_text} = {round(total_diff,2)}")
 
