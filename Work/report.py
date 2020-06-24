@@ -27,12 +27,15 @@ def read_portfolio(filename):
         with open(filename, 'rt') as f:
             rows = csv.reader(f)
             header = next(rows)
-            for row in rows:
-                (name,qty,price) = row
+            for rowno, row in enumerate(rows, start=1):
+                record = dict(zip(header,row))
                 try:
-                    portfolio.append({'name': name, 'shares': int(qty), 'price': float(price)})
+                    name = record['name']
+                    qty = int(record['shares'])
+                    price = float(record['price'])
+                    portfolio.append({'name': name, 'shares': qty, 'price': price})
                 except ValueError:
-                    print(f'invalid record encountered on line:{row} - skipping entry')
+                    print(f'invalid record on rowno {rowno} - skipping entry: {row}')
         return portfolio
     except FileNotFoundError:
         print('File not found')
@@ -65,7 +68,7 @@ prices = read_prices('Data/prices.csv')
 #pprint(prices)
 
 #portfolio = read_portfolio('Data/missing.csv')
-portfolio = read_portfolio('Data/portfolio.csv')
+portfolio = read_portfolio('Data/portfoliodate.csv')
 #pprint(portfolio)
 
 report = make_report(portfolio, prices)
