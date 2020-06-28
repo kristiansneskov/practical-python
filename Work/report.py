@@ -1,4 +1,4 @@
-# report.py
+# report.py:q
 #
 # Exercise 2.4
 
@@ -20,6 +20,19 @@ def read_prices(filename):
         print('File not found', filename)
     return prices
 
+def read_portfolio2(filename):
+    try:
+        with open(filename, 'rt') as f:
+            rows = csv.reader(f)
+            headers = next(rows)
+
+            select = ['name', 'shares', 'price']
+            indices = [headers.index(colname) for colname in select]
+            portfolio = [ { colname: row[index] for colname, index in zip(select, indices) } for row in rows ]
+            return portfolio
+    except FileNotFoundError:
+        print('File not found')
+        return None
 
 def read_portfolio(filename):
     portfolio = []
@@ -34,6 +47,29 @@ def read_portfolio(filename):
                     qty = int(record['shares'])
                     price = float(record['price'])
                     portfolio.append({'name': name, 'shares': qty, 'price': price})
+                except ValueError:
+                    print(f'invalid record on rowno {rowno} - skipping entry: {row}')
+        return portfolio
+    except FileNotFoundError:
+        print('File not found')
+        return None
+
+def read_portfolio3(filename):
+    portfolio = []
+    types = [str, int, float]
+    try:
+        with open(filename, 'rt') as f:
+            rows = csv.reader(f)
+            header = next(rows)
+            for rowno, row in enumerate(rows, start=1):
+                converted = [func(val) for func, val in zip(types, row)]
+                record = dict(zip(header,converted))
+                
+                try:
+                    name = record['name']
+                    qty = int(record['shares'])
+                    price = float(record['price'])
+                    portfolio.append({ name: func(val) for name, func, val in zip(header, types, row) })
                 except ValueError:
                     print(f'invalid record on rowno {rowno} - skipping entry: {row}')
         return portfolio
@@ -58,40 +94,57 @@ def print_report(report):
 
     headers = ('Name', 'Shares', 'Price', 'Change')
     print(' '.join(map(header_formatting, headers)))
-    print('---------- ---------- ---------- -----------')
+    print(('-' * 10 + ' ') * len(headers))
     for name, shares, price, change in report:
         price_value = f"${price:.2f}"
         price_with_currency = f"{price_value:>10s}"
         print(f'{name:>10s} {shares:>10d} {price_with_currency} {change:>10.2f}')
 
-prices = read_prices('Data/prices.csv')
-#pprint(prices)
+#Reading and type-casting data files
+def test_func_casts():
+    f = open('Data/dowstocks.csv')
+    rows = csv.reader(f)
+    headers = next(rows)
+    row = next(rows)
+    types = [str, float, lambda x: tuple(x.split('/')), str, float, float, float, float, int]
+    converted = [func(val) for func, val in zip(types, row)]
+    record = dict(zip(headers, converted))
+    print(record)
 
-#portfolio = read_portfolio('Data/missing.csv')
-portfolio = read_portfolio('Data/portfoliodate.csv')
-#pprint(portfolio)
+def example_of_counter(portfolio):
+    from collections import Counter
+    total_shares = Counter()
+    for record in portfolio:
+        total_shares[record['name']] += record['shares']
 
-report = make_report(portfolio, prices)
+    print(total_shares)
 
-print_report(report)
+def example_of_comprehensions(portfolio):
+    sum_using_comprehension = sum([s['shares']*s['price'] for s in portfolio])
+
+    current_value_of_portfolio = sum([s['shares']*prices[s['name']] for s in portfolio])
+    print(current_value_of_portfolio)
+
+    msftibm = [ s for s in portfolio if s['name'] in {'MSFT','IBM'} ]
+
+    names_using_set_comprehension = { s['name'] for s in portfolio }
+    print(names_using_set_comprehension)
+
+    portfolio_prices_dict_comprehension = { name: prices[name] for name in names_using_set_comprehension }
+    print(portfolio_prices_dict_comprehension)
 
 
-#total=0
-#total_diff = 0
-#for s in portfolio:
-#    total += s['shares'] * s['price']
-#    if s['name'] in prices:
-#        diff = round(s['shares'] * (s['price'] - prices[s['name']]),2)
-#        if diff >= 0:
-#            text = str.ljust(f"Total gain on {s['name']}" ,20)
-#            print(f"{text} = {diff:>10.2f}")
-#        else:
-#            text = str.ljust(f"Total loss on {s['name']}" ,20)
-#            print(f"{text} = {diff:>10.2f}")
-#        total_diff += diff
-#    else:
-#        print(f"No price for share {s['name']}")
-#print(total)
-#diff_text = 'gain' if total_diff > 0 else 'loss'
-#print(f"Total {diff_text} = {round(total_diff,2)}")
+def portfolio_report(portfolio_filename, prices_filename):
+    prices = read_prices(prices_filename)
+    #pprint(prices)
 
+    #portfolio = read_portfolio('Data/missing.csv')
+    portfolio = read_portfolio(portfolio_filename)
+    #pprint(portfolio)
+
+    report = make_report(portfolio, prices)
+
+    print_report(report)
+
+
+portfolio_report('Data/portfoliodate.csv','Data/prices.csv')
